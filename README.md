@@ -1,7 +1,10 @@
 Kafka in Docker
 ===
 
-This repository provides everything you need to run Kafka in Docker.
+This repository provides everything you need to run Kafka in Docker. 
+Added support for using SASL Authentication with Kafka. SASL Authentication
+is backed by JAAS file with clear text username/password combinations. 
+
 
 For convenience also contains a packaged proxy that can be used to get data from
 a legacy Kafka 7 cluster into a dockerized Kafka 8.
