@@ -7,6 +7,7 @@
 # * LOG_RETENTION_HOURS: the minimum age of a log file in hours to be eligible for deletion (default is 168, for 1 week)
 # * LOG_RETENTION_BYTES: configure the size at which segments are pruned from the log, (default is 1073741824, for 1GB)
 # * NUM_PARTITIONS: configure the default number of log partitions per topic
+# * USE_ACL: configure ACL with SASL plaintext protocol backed by JAAS file
 
 # Configure advertised host/port if we run in helios
 if [ ! -z "$HELIOS_PORT_kafka" ]; then
@@ -14,29 +15,17 @@ if [ ! -z "$HELIOS_PORT_kafka" ]; then
     ADVERTISED_PORT=`echo $HELIOS_PORT_kafka | cut -d':' -f 2`
 fi
 
-# Set the external host and port
-if [ ! -z "$ADVERTISED_HOST" ]; then
-    echo "advertised host: $ADVERTISED_HOST"
-    if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.host.name)=(.*)/\1=$ADVERTISED_HOST/g" $KAFKA_HOME/config/server.properties
-    else
-        echo "advertised.host.name=$ADVERTISED_HOST" >> $KAFKA_HOME/config/server.properties
-    fi
-fi
-if [ ! -z "$ADVERTISED_PORT" ]; then
-    echo "advertised port: $ADVERTISED_PORT"
-    if grep -q "^advertised.port" $KAFKA_HOME/config/server.properties; then
-        sed -r -i "s/#(advertised.port)=(.*)/\1=$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
-    else
-        echo "advertised.port=$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
-    fi
+# Set hostname and port to advertise to producers and consumers
+if [ ! -z "$ADVERTISED_HOST" ] && [ ! -z "$ADVERTISED_PORT" ]; then
+    echo >> $KAFKA_HOME/config/server.properties
+    echo "advertised.listeners=PLAINTEXT://$ADVERTISED_HOST:$ADVERTISED_PORT" >> $KAFKA_HOME/config/server.properties
 fi
 
 # Set the zookeeper chroot
 if [ ! -z "$ZK_CHROOT" ]; then
     # wait for zookeeper to start up
     until /usr/share/zookeeper/bin/zkServer.sh status; do
-      sleep 0.1
+      sleep 0.1 d
     done
 
     # create the chroot node
@@ -69,6 +58,15 @@ fi
 if [ ! -z "$AUTO_CREATE_TOPICS" ]; then
     echo "auto.create.topics.enable: $AUTO_CREATE_TOPICS"
     echo "auto.create.topics.enable=$AUTO_CREATE_TOPICS" >> $KAFKA_HOME/config/server.properties
+fi
+
+# Configure ACL with SASL plaintext backed by JAAS
+if [ ! -z "$USE_ACL" ]; then
+    echo "configuring ACL using JAAS file"
+    echo >> $KAFKA_HOME/config/server.properties
+    sed -r -i "s/(advertised.listeners)=(.*)/\1=SASL_PLAINTEXT:\/\/$ADVERTISED_HOST:$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
+    cat $KAFKA_HOME/config/kafka_broker_sasl.properties >> $KAFKA_HOME/config/server.properties
+    export EXTRA_ARGS="-Djava.security.auth.login.config=$KAFKA_HOME/config/kafka_broker_jaas.conf"
 fi
 
 # Run Kafka
