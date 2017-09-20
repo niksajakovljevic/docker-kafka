@@ -25,6 +25,11 @@ Run
 docker run -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 spotify/kafka
 ```
 
+Broker with SASL support:
+```bash
+docker run -p 2181:2181 -p 9092:9092 -p 9093:9093 --env ADVERTISED_HOST=`docker-machine ip \`docker-machine active\`` --env ADVERTISED_PORT=9092 --env ADVERTISED_SASL_PORT=9093 spotify/kafka
+```
+
 ```bash
 export KAFKA=`docker-machine ip \`docker-machine active\``:9092
 kafka-console-producer.sh --broker-list $KAFKA --topic test

@@ -7,7 +7,7 @@
 # * LOG_RETENTION_HOURS: the minimum age of a log file in hours to be eligible for deletion (default is 168, for 1 week)
 # * LOG_RETENTION_BYTES: configure the size at which segments are pruned from the log, (default is 1073741824, for 1GB)
 # * NUM_PARTITIONS: configure the default number of log partitions per topic
-# * USE_ACL: configure ACL with SASL plaintext protocol backed by JAAS file. Set to anything you like in order to enable ACL, eg. "yes"
+# * ADVERTISED_SASL_PORT: configure ACL with SASL plaintext protocol backed by JAAS file. The external port for SASL protocol eg. 9093
 
 # Configure advertised host/port if we run in helios
 if [ ! -z "$HELIOS_PORT_kafka" ]; then
@@ -61,10 +61,10 @@ if [ ! -z "$AUTO_CREATE_TOPICS" ]; then
 fi
 
 # Configure ACL with SASL plaintext backed by JAAS
-if [ ! -z "$USE_ACL" ]; then
+if [ ! -z "$ADVERTISED_SASL_PORT" ]; then
     echo "configuring ACL using JAAS file"
     echo >> $KAFKA_HOME/config/server.properties
-    sed -r -i "s/(advertised.listeners)=(.*)/\1=SASL_PLAINTEXT:\/\/$ADVERTISED_HOST:$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
+    sed -r -i "s/(advertised.listeners)=(.*)/\1=PLAINTEXT:\/\/$ADVERTISED_HOST:$ADVERTISED_PORT,SASL_PLAINTEXT:\/\/$ADVERTISED_HOST:$ADVERTISED_SASL_PORT/g" $KAFKA_HOME/config/server.properties
     cat $KAFKA_HOME/config/kafka_broker_sasl.properties >> $KAFKA_HOME/config/server.properties
     export EXTRA_ARGS="-Djava.security.auth.login.config=$KAFKA_HOME/config/kafka_broker_jaas.conf"
 fi
